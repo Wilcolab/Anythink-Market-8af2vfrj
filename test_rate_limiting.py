@@ -31,7 +31,7 @@ class RateLimitTest:
     """Test case for rate limiting validation"""
     
     def __init__(self, name: str, endpoint: str, method: str, limit: int, 
-                 data: Dict[str, Any] = None, headers: Dict[str, str] = None):
+                 data: Any = None, headers: Dict[str, str] = None):
         self.name = name
         self.endpoint = endpoint
         self.method = method
@@ -55,12 +55,21 @@ class RateLimitTest:
         for i in range(test_requests):
             try:
                 if self.method == "POST":
-                    response = await client.post(
-                        f"{BASE_URL}{self.endpoint}",
-                        json=self.data,
-                        headers=self.headers,
-                        timeout=5.0
-                    )
+                    # Handle form data vs JSON data
+                    if self.headers.get("Content-Type") == "application/x-www-form-urlencoded":
+                        response = await client.post(
+                            f"{BASE_URL}{self.endpoint}",
+                            data=self.data,  # Use data for form-encoded
+                            headers=self.headers,
+                            timeout=5.0
+                        )
+                    else:
+                        response = await client.post(
+                            f"{BASE_URL}{self.endpoint}",
+                            json=self.data,  # Use json for JSON data
+                            headers=self.headers,
+                            timeout=5.0
+                        )
                 elif self.method == "GET":
                     response = await client.get(
                         f"{BASE_URL}{self.endpoint}",
@@ -125,7 +134,7 @@ async def test_auth_endpoint():
         endpoint="/api/token",
         method="POST",
         limit=RATE_LIMITS["auth"]["limit"],
-        data={"username": "testuser", "password": "wrongpassword"},
+        data="username=testuser&password=wrongpassword",
         headers={"Content-Type": "application/x-www-form-urlencoded"}
     )
     

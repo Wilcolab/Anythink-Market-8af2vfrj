@@ -6,11 +6,20 @@ a running server or external dependencies.
 """
 
 import sys
+import os
+import re
 import pytest
 from unittest.mock import Mock, patch
 from fastapi import Request, Response
 from fastapi.testclient import TestClient
 from slowapi.errors import RateLimitExceeded
+
+# Path constants for test files
+BASE_DIR = os.path.dirname(__file__)
+APP_MAIN_PATH = os.path.join(BASE_DIR, 'app', 'main.py')
+API_ROUTES_PATH = os.path.join(BASE_DIR, 'app', 'api', 'routes.py')
+AUTH_ROUTES_PATH = os.path.join(BASE_DIR, 'app', 'auth', 'routes.py')
+
 
 # Test imports
 def test_slowapi_import():
@@ -121,11 +130,7 @@ def test_error_handler():
 def test_main_app_integration():
     """Test that main.py properly integrates rate limiting"""
     try:
-        import os
-        # Use relative path from current directory
-        main_py_path = os.path.join(os.path.dirname(__file__), 'app', 'main.py')
-        
-        with open(main_py_path, 'r') as f:
+        with open(APP_MAIN_PATH, 'r') as f:
             content = f.read()
         
         required_imports = [
@@ -160,12 +165,7 @@ def test_main_app_integration():
 def test_api_routes_integration():
     """Test that api/routes.py properly applies rate limiting"""
     try:
-        import os
-        import re
-        
-        api_routes_path = os.path.join(os.path.dirname(__file__), 'app', 'api', 'routes.py')
-        
-        with open(api_routes_path, 'r') as f:
+        with open(API_ROUTES_PATH, 'r') as f:
             content = f.read()
         
         required_imports = [
@@ -210,12 +210,7 @@ def test_api_routes_integration():
 def test_auth_routes_integration():
     """Test that auth/routes.py properly applies rate limiting"""
     try:
-        import os
-        import re
-        
-        auth_routes_path = os.path.join(os.path.dirname(__file__), 'app', 'auth', 'routes.py')
-        
-        with open(auth_routes_path, 'r') as f:
+        with open(AUTH_ROUTES_PATH, 'r') as f:
             content = f.read()
         
         required_imports = [
@@ -248,10 +243,6 @@ def test_auth_routes_integration():
 
 def test_files_created():
     """Test that all required files were created"""
-    import os
-    
-    base_dir = os.path.dirname(__file__)
-    
     required_files = [
         'app/middleware/__init__.py',
         'app/middleware/rate_limiter.py',
@@ -262,7 +253,7 @@ def test_files_created():
     
     all_exist = True
     for filepath in required_files:
-        full_path = os.path.join(base_dir, filepath)
+        full_path = os.path.join(BASE_DIR, filepath)
         if not os.path.exists(full_path):
             print(f"✗ Missing file: {filepath}")
             all_exist = False

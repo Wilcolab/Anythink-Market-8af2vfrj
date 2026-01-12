@@ -51,11 +51,14 @@ def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Res
         f"Limit: {exc.detail}"
     )
     
+    # Extract rate limit details for user-friendly message
+    limit_str = str(exc.detail)
+    
     return JSONResponse(
         status_code=429,
         content={
             "error": "Rate limit exceeded",
-            "detail": f"Too many requests. Please try again later.",
-            "limit": str(exc.detail)
+            "detail": f"Too many requests. You have exceeded the rate limit of {limit_str}. Please try again later.",
+            "limit": limit_str
         }
     )
