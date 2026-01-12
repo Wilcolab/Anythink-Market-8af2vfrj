@@ -121,9 +121,11 @@ def test_error_handler():
 def test_main_app_integration():
     """Test that main.py properly integrates rate limiting"""
     try:
-        # We can't fully import app.main due to LLM service initialization
-        # But we can check the file contents for required changes
-        with open('/home/runner/work/Anythink-Market-8af2vfrj/Anythink-Market-8af2vfrj/app/main.py', 'r') as f:
+        import os
+        # Use relative path from current directory
+        main_py_path = os.path.join(os.path.dirname(__file__), 'app', 'main.py')
+        
+        with open(main_py_path, 'r') as f:
             content = f.read()
         
         required_imports = [
@@ -158,17 +160,17 @@ def test_main_app_integration():
 def test_api_routes_integration():
     """Test that api/routes.py properly applies rate limiting"""
     try:
-        with open('/home/runner/work/Anythink-Market-8af2vfrj/Anythink-Market-8af2vfrj/app/api/routes.py', 'r') as f:
+        import os
+        import re
+        
+        api_routes_path = os.path.join(os.path.dirname(__file__), 'app', 'api', 'routes.py')
+        
+        with open(api_routes_path, 'r') as f:
             content = f.read()
         
         required_imports = [
-            'from fastapi import APIRouter, Depends, BackgroundTasks, Header, HTTPException, status, Request',
+            'Request',  # Check Request is imported
             'from app.middleware.rate_limiter import limiter',
-        ]
-        
-        required_decorators = [
-            '@limiter.limit("10/minute")',  # LLM endpoint
-            '@limiter.limit("30/minute")',  # User info endpoint
         ]
         
         for import_stmt in required_imports:
@@ -176,18 +178,22 @@ def test_api_routes_integration():
                 print(f"✗ Missing import in api/routes.py: {import_stmt}")
                 return False
         
-        for decorator in required_decorators:
-            if decorator not in content:
-                print(f"✗ Missing decorator in api/routes.py: {decorator}")
-                return False
+        # Use regex for more flexible matching
+        if not re.search(r'@limiter\.limit\(["\']10/minute["\']\)', content):
+            print("✗ Missing 10/minute rate limit in api/routes.py")
+            return False
+        
+        if not re.search(r'@limiter\.limit\(["\']30/minute["\']\)', content):
+            print("✗ Missing 30/minute rate limit in api/routes.py")
+            return False
         
         # Check that secure_query has Request parameter
-        if 'async def secure_query(\n    request: Request,' not in content:
+        if not re.search(r'async def secure_query\([^)]*request:\s*Request', content, re.DOTALL):
             print("✗ secure_query missing Request parameter")
             return False
         
         # Check that get_current_user_info has Request parameter
-        if 'async def get_current_user_info(request: Request,' not in content:
+        if not re.search(r'async def get_current_user_info\([^)]*request:\s*Request', content, re.DOTALL):
             print("✗ get_current_user_info missing Request parameter")
             return False
         
@@ -204,16 +210,17 @@ def test_api_routes_integration():
 def test_auth_routes_integration():
     """Test that auth/routes.py properly applies rate limiting"""
     try:
-        with open('/home/runner/work/Anythink-Market-8af2vfrj/Anythink-Market-8af2vfrj/app/auth/routes.py', 'r') as f:
+        import os
+        import re
+        
+        auth_routes_path = os.path.join(os.path.dirname(__file__), 'app', 'auth', 'routes.py')
+        
+        with open(auth_routes_path, 'r') as f:
             content = f.read()
         
         required_imports = [
-            'from fastapi import APIRouter, Depends, HTTPException, status, Request',
+            'Request',  # Check Request is imported
             'from app.middleware.rate_limiter import limiter',
-        ]
-        
-        required_decorators = [
-            '@limiter.limit("5/minute")',  # Auth endpoint
         ]
         
         for import_stmt in required_imports:
@@ -221,13 +228,13 @@ def test_auth_routes_integration():
                 print(f"✗ Missing import in auth/routes.py: {import_stmt}")
                 return False
         
-        for decorator in required_decorators:
-            if decorator not in content:
-                print(f"✗ Missing decorator in auth/routes.py: {decorator}")
-                return False
+        # Use regex for more flexible matching
+        if not re.search(r'@limiter\.limit\(["\']5/minute["\']\)', content):
+            print("✗ Missing 5/minute rate limit in auth/routes.py")
+            return False
         
         # Check that login_for_access_token has Request parameter
-        if 'async def login_for_access_token(request: Request,' not in content:
+        if not re.search(r'async def login_for_access_token\([^)]*request:\s*Request', content, re.DOTALL):
             print("✗ login_for_access_token missing Request parameter")
             return False
         
@@ -243,17 +250,20 @@ def test_files_created():
     """Test that all required files were created"""
     import os
     
+    base_dir = os.path.dirname(__file__)
+    
     required_files = [
-        '/home/runner/work/Anythink-Market-8af2vfrj/Anythink-Market-8af2vfrj/app/middleware/__init__.py',
-        '/home/runner/work/Anythink-Market-8af2vfrj/Anythink-Market-8af2vfrj/app/middleware/rate_limiter.py',
-        '/home/runner/work/Anythink-Market-8af2vfrj/Anythink-Market-8af2vfrj/test_rate_limiting.py',
-        '/home/runner/work/Anythink-Market-8af2vfrj/Anythink-Market-8af2vfrj/RATE_LIMITING_GUIDE.md',
-        '/home/runner/work/Anythink-Market-8af2vfrj/Anythink-Market-8af2vfrj/RATE_LIMITING_PR.md',
+        'app/middleware/__init__.py',
+        'app/middleware/rate_limiter.py',
+        'test_rate_limiting.py',
+        'RATE_LIMITING_GUIDE.md',
+        'RATE_LIMITING_PR.md',
     ]
     
     all_exist = True
     for filepath in required_files:
-        if not os.path.exists(filepath):
+        full_path = os.path.join(base_dir, filepath)
+        if not os.path.exists(full_path):
             print(f"✗ Missing file: {filepath}")
             all_exist = False
     

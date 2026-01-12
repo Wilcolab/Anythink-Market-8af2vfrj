@@ -35,9 +35,10 @@ This PR implements comprehensive rate limiting across all API endpoints using th
 ### New Files Created
 1. **`app/middleware/__init__.py`** - Middleware package initialization
 2. **`app/middleware/rate_limiter.py`** - Rate limiting configuration module with centralized limits and custom error handling
-3. **`test_rate_limiting.py`** - Comprehensive test suite (297 lines) covering all protection scenarios
-4. **`RATE_LIMITING_GUIDE.md`** - Complete documentation with implementation details and best practices
-5. **`RATE_LIMITING_PR.md`** - This PR description with full details
+3. **`test_rate_limiting.py`** - Comprehensive integration test suite
+4. **`test_rate_limiting_unit.py`** - Unit test suite (9 tests, 100% pass rate)
+5. **`RATE_LIMITING_GUIDE.md`** - Complete documentation with implementation details and best practices
+6. **`RATE_LIMITING_PR.md`** - This PR description with full details
 
 ### Modified Files
 1. **`app/main.py`** - Integrated slowapi with FastAPI, added rate limit exception handler
