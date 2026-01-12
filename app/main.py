@@ -8,6 +8,7 @@ import time
 import os
 import logging
 from dotenv import load_dotenv
+from slowapi.errors import RateLimitExceeded
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -23,6 +24,7 @@ if not os.environ.get("ENGINE_WILCO_AI_URL"):
 from app.api.routes import router as api_router
 from app.auth.routes import router as auth_router
 from app.database.db_manager import init_db, populate_sample_data
+from app.middleware.rate_limiter import limiter, rate_limit_exceeded_handler
 
 # Global variable to track application readiness
 app_ready = False
@@ -37,6 +39,10 @@ async def setup_db():
     logger.info("Database setup complete!")
 
 app = FastAPI(title="SecureInfo Concierge", description="Financial assistant application with LLM integration")
+
+# Configure slowapi rate limiting
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 @app.on_event("startup")
 async def startup_event():
@@ -69,12 +75,14 @@ app.include_router(api_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
 
 @app.get("/health")
-async def health_check():
+@limiter.limit("120/minute")
+async def health_check(request: Request):
     """Simple health check endpoint that always returns 200 OK"""
     return {"status": "ok"}
 
 @app.get("/ready")
-async def ready_check():
+@limiter.limit("120/minute")
+async def ready_check(request: Request):
     """Readiness check endpoint that returns 200 only when the app is fully initialized"""
     global app_ready
     
